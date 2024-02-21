@@ -227,6 +227,8 @@ def main(opt):
 
     os.makedirs(opt.outdir, exist_ok=True)
     outpath = opt.outdir
+    folder_name = outpath.split('/')[1]
+    print(folder_name)
 
     print("Creating invisible watermark encoder (see https://github.com/ShieldMnt/invisible-watermark)...")
     wm = "SDV2"
@@ -246,7 +248,8 @@ def main(opt):
             #data = f.read().splitlines()
             #data = [p for p in data for i in range(opt.repeat)]
             f_str = f.read()
-            s_str = f_str.split(',')
+            s_str = f_str.split('\n')
+            print(f"len , str: {len(s_str)}")
             str_list = [s_str[i].strip(" '") for i in range(len(s_str))]
            
             #after_trans = translate(before_trans)
@@ -271,7 +274,8 @@ def main(opt):
         model.ema_scope():
             all_samples = list()
             for n in trange(opt.n_iter, desc="Sampling"):
-                for prompts in tqdm(data, desc="data"):
+                base_count += 1
+                for k, prompts in enumerate(tqdm(data, desc="data")):
                     uc = None
                     if opt.scale != 1.0:
                         uc = model.get_learned_conditioning(batch_size * [""])
@@ -291,13 +295,13 @@ def main(opt):
 
                     x_samples = model.decode_first_stage(samples)
                     x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
-
+                    
                     for x_sample in x_samples:
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                         img = Image.fromarray(x_sample.astype(np.uint8))
                         #img = put_watermark(img, wm_encoder)
-                        img.save(os.path.join(sample_path, f"{base_count:05}.png"))
-                        base_count += 1
+                        img.save(os.path.join(sample_path, f"{folder_name}{k+1}_{base_count}.png"))
+                        
                         sample_count += 1
 
                     #all_samples.append(x_samples)
